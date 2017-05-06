@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*-
  *
- * Copyright (c) 2013 Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2016 Apple Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mDNSMacOSX.h"
-#include <SystemConfiguration/VPNAppLayerPrivate.h>
 
-mDNSexport mDNSs32 mDNSPlatformGetServiceID(mDNS *const m, DNSQuestion *q)
-{
-    (void) m;
-    int sid;
+#include "mDNSEmbeddedAPI.h"
 
-    if (q->pid)
-        sid = VPNAppLayerGetMatchingServiceIdentifier(q->pid, NULL);
-    else
-        sid = VPNAppLayerGetMatchingServiceIdentifier(0, q->uuid);
-    
-    LogInfo("mDNSPlatformGetServiceID: returning %d for %##s (%s)", sid, q->qname.c, DNSTypeName(q->qtype));
-    
-    return sid;
+#ifndef __Metrics_h
+#define __Metrics_h
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+#if TARGET_OS_EMBEDDED
+mStatus	MetricsInit(void);
+void	MetricsUpdateUDNSStats(const domainname *inQueryName, mDNSBool inAnswered, mDNSu32 inSendCount, mDNSu32 inLatencyMs, mDNSBool inForCellular);
+void	LogMetrics(void);
+#endif
+
+#ifdef  __cplusplus
 }
+#endif
+
+#endif // __Metrics_h
