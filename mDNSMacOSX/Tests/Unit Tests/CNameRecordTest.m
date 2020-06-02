@@ -50,7 +50,7 @@ uint8_t query_response_msgbuf[108] = {
 #define uDNS_TargetQID 16745
 char udns_original_domainname_cstr[] = "123server.dotbennu.com.";
 char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
-//static const mDNSv4Addr dns_response_ipv4 = {{ 10, 100, 0, 1 }};
+static const mDNSv4Addr dns_response_ipv4 = {{ 10, 100, 0, 1 }};
 
 @interface CNameRecordTest : XCTestCase
 {
@@ -105,13 +105,20 @@ char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
     }
 }
 
+- (void)testCNameRecordTestSeries
+{
+    [self _startClientQueryRequest];
+    [self _populateCacheWithClientResponseRecords];
+    [self _simulateNetworkChangeAndVerify];
+}
+
 // This test simulates a uds client request by setting up a client request and then
 // calling mDNSResponder's handle_client_request.  The handle_client_request function
 // processes the request and starts a query.  This unit test verifies
 // the client request and query were setup as expected.  This unit test also calls
 // mDNS_execute which determines the cache does not contain the new question's
 // answer.
-- (void)testStartClientQueryRequest
+- (void)_startClientQueryRequest
 {
     mDNS *const m = &mDNSStorage;
     request_state* req = client_request_message;
@@ -189,19 +196,19 @@ char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
     XCTAssertEqual(m->rrcache_totalused, 0);
     XCTAssertNil((__bridge id)req->replies);
 }
-#if 0
+
 // This unit test receives a canned uDNS response message by calling the mDNSCoreReceive() function.
 // It then verifies cache entries were added for the CNAME and A records that were contained in the
 // answers of the canned response, query_response_msgbuf.  This unit test also verifies that
 // 2 add events were generated for the client.
-- (void)testPopulateCacheWithClientResponseRecords
+- (void)_populateCacheWithClientResponseRecords
 {
     mDNS *const m = &mDNSStorage;
     DNSMessage *msgptr = (DNSMessage *)query_response_msgbuf;
     size_t msgsz = sizeof(query_response_msgbuf);
     struct reply_state *reply;
     request_state* req = client_request_message;
-    DNSQuestion *q = &req->u.queryrecord.q;
+    DNSQuestion *q = &req->u.queryrecord.op.q;
     const char *data;
     const char *end;
     char name[kDNSServiceMaxDomainName];
@@ -300,11 +307,11 @@ char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
 //      1.) The restart of query for A record.
 //      2.) The cache is empty after mDNS_Execute removes the cache entres.
 //      3.) The remove event is verified by examining the request's reply data.
-- (void)testSimulateNetworkChangeAndVerify
+- (void)_simulateNetworkChangeAndVerify
 {
     mDNS *const m = &mDNSStorage;
     request_state*  req = client_request_message;
-    DNSQuestion*    q = &req->u.queryrecord.q;
+    DNSQuestion*    q = &req->u.queryrecord.op.q;
     mDNSu32 CacheUsed =0, notUsed =0;
     const char *data;    const char *end;
     char name[kDNSServiceMaxDomainName];
@@ -314,8 +321,8 @@ char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
     
     // The uDNS_SetupDNSConfig reconfigures the resolvers so the A record query is restarted and
     // both the CNAME and A record are purged.
-    uDNS_SetupDNSConfig(m);
-    
+    force_uDNS_SetupDNSConfig_ut(m);
+
     // Verify the A record query was restarted.  This is done indirectly by noticing the transaction id and interval have changed.
     XCTAssertEqual(q->ThisQInterval, InitialQuestionInterval);
     XCTAssertNotEqual(q->TargetQID.NotAnInteger, uDNS_TargetQID);
@@ -363,6 +370,5 @@ char udns_cname_domainname_cstr[] = "test212.dotbennu.com.";
     XCTAssertEqual(rdata[2], dns_response_ipv4.b[2]);
     XCTAssertEqual(rdata[3], dns_response_ipv4.b[3]);
 }
-#endif
 
 @end

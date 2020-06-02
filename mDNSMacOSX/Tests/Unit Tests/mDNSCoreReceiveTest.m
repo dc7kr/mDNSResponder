@@ -152,7 +152,6 @@ mDNSlocal void InitmDNSStorage(mDNS *const m)
     XCTAssertEqual(m->MPktNum,                  1);
 }
 
-
 #if 0
 - (void)testPerformanceExample {
     // This is an example of a performance test case.
